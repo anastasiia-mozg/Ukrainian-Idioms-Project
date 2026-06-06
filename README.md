@@ -8,7 +8,7 @@ A web application for automatic extraction of Ukrainian idioms from a text, comb
 
 Given any Ukrainian text, the app splits it into sentences and runs two independent extraction pipelines in parallel:
 
-- **Dictionary method** — matches sentences against a curated list of idioms taken from this (repo)[https://github.com/bohdana-ivakhnenko/ukrainian-idioms]. Before matching, both the input text and the dictionary entries are lemmatized using a Ukrainian spaCy model, which allows the system to catch inflected and morphologically varied forms of each idiom.
+- **Dictionary method** — matches sentences against a curated list of idioms taken from this [repo](https://github.com/bohdana-ivakhnenko/ukrainian-idioms). Before matching, both the input text and the dictionary entries are lemmatized using a Ukrainian spaCy model, which allows the system to catch inflected and morphologically varied forms of each idiom.
 - **Model method (Gemini)** — sends the sentences to Google's Gemini 2.5 Flash Lite, which identifies idioms based on semantic and contextual understanding, without relying on any fixed vocabulary.
 
 Results from both methods are displayed side by side, along with the idioms found by both — giving a sense of agreement between the two approaches.
