@@ -77,4 +77,4 @@ The result is stored in `dicts/idiom_variants_dict.json`.
 
 ## Authors
 
-Developed by **Анастасія Мозгова** and **Юліана Карпцова**, 2026.
+Developed by **[Anastasiia Mozghova](https://github.com/anastasiia-mozg)** and **[Yuliana Karptsova](https://github.com/U-Karpcova)**, 2026.
