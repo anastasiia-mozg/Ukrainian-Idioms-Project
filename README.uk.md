@@ -77,4 +77,4 @@ streamlit run code/main.py
 
 ## Автори
 
-Розробили **Анастасія Мозгова** та **Юліана Карпцова**, 2026.
+Розробили **[Анастасія Мозгова](https://github.com/anastasiia-mozg)** та **[Юліана Карпцова](https://github.com/U-Karpcova)**, 2026.
