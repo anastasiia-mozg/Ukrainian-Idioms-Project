@@ -1,6 +1,6 @@
-# Ukrainian Idiom Extractor
+# Ukrainian Idiom Extractor 
 
-A web application for automatic extraction of Ukrainian idioms from a text, combining two complementary approaches: dictionary-based search and a large language model.
+A web application for automatic extraction of Ukrainian idioms from a text, combining two complementary approaches: dictionary-based search and a large language model. (Click to read the [Ukrainian version](README.uk.md))
 
 ---
 
