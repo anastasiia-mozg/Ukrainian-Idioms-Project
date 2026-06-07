@@ -163,7 +163,7 @@ elif st.session_state.page == "results":
                            file_name="dict_idioms.csv", mime="text/csv")
 
     # ==== SHARED IDIOMS ====
-    with st.expander("📊 Спільні фразеологізми та статистика"):
+    with st.expander("📊 Спільні фразеологізми"):
         if len(st.session_state.shared_idioms) != 0:
             st.write("**Спільні фразеологізми:**")
             for idiom in st.session_state.shared_idioms:
