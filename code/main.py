@@ -5,7 +5,7 @@ import re
 from collections import defaultdict
 
 from idiom_exctractor_backend import IdiomExtractorAppService
-
+from idiom_llm_extractor import RateLimitExceeded
 
 
 # ========== App Navigation State ==========
@@ -16,11 +16,39 @@ if "page" not in st.session_state:
 def go_to_input():
     st.session_state.page = "input"
 
-def go_to_results():
-    st.session_state.page = "results"
-
 def restart():
     st.session_state.page = "intro"
+
+
+# ========== Highlight Function ==========
+
+def highlight_text(text, dict_idioms, model_idioms, shared_idioms):
+    shared = set(i.lower() for i in shared_idioms)
+    dict_only = set(i.lower() for i in dict_idioms) - shared
+    model_only = set(i.lower() for i in model_idioms) - shared
+
+    colors = {
+        "shared": "#a8e6cf",
+        "dict":   "#ffd3b6",
+        "model":  "#a0c4ff",
+    }
+
+    all_idioms = (
+        [(i, "shared") for i in shared] +
+        [(i, "dict") for i in dict_only] +
+        [(i, "model") for i in model_only]
+    )
+    all_idioms.sort(key=lambda x: len(x[0]), reverse=True)
+
+    for idiom, source in all_idioms:
+        pattern = re.compile(re.escape(idiom), re.IGNORECASE)
+        color = colors[source]
+        text = pattern.sub(
+            lambda m: f'<span style="background-color:{color};padding:2px 4px;border-radius:3px;">{m.group()}</span>',
+            text
+        )
+    return text
+
 
 # ========== Page: Intro ==========
 
@@ -49,6 +77,7 @@ if st.session_state.page == "intro":
     </div>
     """, unsafe_allow_html=True)
 
+
 # ========== Page: Input ==========
 
 elif st.session_state.page == "input":
@@ -59,10 +88,13 @@ elif st.session_state.page == "input":
     if st.button("Обробити"):
         st.session_state.text = text
         st.session_state.ready = False
-        go_to_results()
+        st.session_state.page = "results"
+        st.rerun()
 
     if st.button("Назад"):
-        restart()
+        st.session_state.page = "intro"
+        st.rerun()
+
 
 # ========== Page: Results ==========
 
@@ -71,15 +103,40 @@ elif st.session_state.page == "results":
 
     if "ready" not in st.session_state or not st.session_state.ready:
         with st.spinner("⏳ Обробка тексту..."):
-            extractor_service = IdiomExtractorAppService()
-            results = extractor_service.extract_idioms(st.session_state.text)
+            try:
+                extractor_service = IdiomExtractorAppService()
+                results = extractor_service.extract_idioms(st.session_state.text)
 
-            st.session_state.dict_idioms = results["dict_idioms"]
-            st.session_state.model_idioms = results["model_idioms"]
-            st.session_state.shared_idioms = results["shared_idioms"]
-            st.session_state.idioms_stats = results["idioms_stats"]
-            st.session_state.ready = True
+                st.session_state.dict_idioms = results["dict_idioms"]
+                st.session_state.model_idioms = results["model_idioms"]
+                st.session_state.shared_idioms = results["shared_idioms"]
+                st.session_state.idioms_stats = results["idioms_stats"]
+                st.session_state.original_text = results["original_text"]
+                st.session_state.ready = True
 
+            except RateLimitExceeded as e:
+                st.error(str(e))
+                st.button("⬅️ Повернутись", on_click=go_to_input)
+                st.stop()
+
+    # ==== HIGHLIGHTED TEXT ====
+    st.markdown("### 🔍 Текст з виділеними фразеологізмами")
+    st.markdown("""
+        <span style='background:#a8e6cf;padding:2px 6px;border-radius:3px;'>█</span> Обидва методи &nbsp;&nbsp;
+        <span style='background:#ffd3b6;padding:2px 6px;border-radius:3px;'>█</span> Словник &nbsp;&nbsp;
+        <span style='background:#a0c4ff;padding:2px 6px;border-radius:3px;'>█</span> Модель
+    """, unsafe_allow_html=True)
+
+    highlighted = highlight_text(
+        st.session_state.original_text,
+        st.session_state.dict_idioms,
+        st.session_state.model_idioms,
+        st.session_state.shared_idioms
+    )
+    st.markdown(f"<div style='line-height:2;font-size:1.1em;margin-top:10px;'>{highlighted}</div>",
+                unsafe_allow_html=True)
+
+    st.markdown("---")
 
     # ==== BAR CHART ====
     method_names = ["Модель", "Словник"]
@@ -90,17 +147,6 @@ elif st.session_state.page == "results":
     ])
     fig.update_layout(title="Кількість знайдених фразеологізмів за методом")
     st.plotly_chart(fig, use_container_width=True)
-
-    # ==== LIST OUTPUT ====
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### 🌟 Метод моделі")
-        for idiom in st.session_state.model_idioms:
-            st.write(f"- {idiom}")
-    with col2:
-        st.markdown("### 📚 Словниковий метод")
-        for idiom in st.session_state.dict_idioms:
-            st.write(f"- {idiom}")
 
     # ==== DOWNLOAD BUTTONS ====
     model_df = pd.DataFrame(st.session_state.model_idioms, columns=["Model Idioms"])
@@ -116,7 +162,7 @@ elif st.session_state.page == "results":
                            dict_df.to_csv(index=False, encoding='utf-8-sig'),
                            file_name="dict_idioms.csv", mime="text/csv")
 
-    # ==== SHARED IDIOMS AND STATS ====
+    # ==== SHARED IDIOMS ====
     with st.expander("📊 Спільні фразеологізми та статистика"):
         if len(st.session_state.shared_idioms) != 0:
             st.write("**Спільні фразеологізми:**")
