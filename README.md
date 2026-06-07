@@ -4,6 +4,10 @@ A web application for automatic extraction of Ukrainian idioms from a text, comb
 
 ---
 
+## Demo
+
+The app is live on Hugging Face Spaces — no installation required: [Ukrainian Idiom Extractor](https://huggingface.co/spaces/anastasiia-mozg/Ukrainian-Idiom-Extractor)
+
 ## What it does
 
 Given any Ukrainian text, the app splits it into sentences and runs two independent extraction pipelines in parallel:
