@@ -6,12 +6,14 @@ import re
 import os
 from google import genai
 from google.genai import types
-from google.api_core import exceptions
-
 
 from prompts import prompts
 from dotenv import load_dotenv
 load_dotenv("secrets.env")
+
+
+class RateLimitExceeded(Exception):
+    pass
 
 
 class LLM_Extractor:
@@ -20,25 +22,49 @@ class LLM_Extractor:
         self._sentence_quantity = len(sentences)
         self.general_prompt = prompts['prompt_for_extracting_idioms']
         self.__regex_for_extracting_dict = r'{.*}'
-        self.__api_key = self.__get_api_key()
-        self.client = genai.Client(api_key=self.__api_key)
+
+        self.__api_keys = self.__get_api_keys()
+        self.__current_key_index = 0
+        self.client = self.__create_client()
         self.model = "gemini-2.5-flash-lite"
         self.generation_config = types.GenerateContentConfig(
             response_mime_type="application/json"
         )
 
-    def __get_api_key(self):
-        """Checks whether the API key is accessible in the environment."""
-        key = os.getenv("GOOGLE_API_KEY")
-        if not key:
-            raise ValueError("GOOGLE_API_KEY not found in environment.")
-        return key
+    def __get_api_keys(self):
+        keys = []
+        i = 1
+        while True:
+            key = os.getenv(f"GOOGLE_API_KEY_{i}")
+            if not key:
+                break
+            keys.append(key)
+            i += 1
+
+        # fallback to single key
+        if not keys:
+            single = os.getenv("GOOGLE_API_KEY")
+            if single:
+                keys.append(single)
+
+        if not keys:
+            raise ValueError("No Google API keys found in environment.")
+        return keys
+
+    def __create_client(self):
+        return genai.Client(api_key=self.__api_keys[self.__current_key_index])
+
+    def __switch_key(self):
+        self.__current_key_index += 1
+        if self.__current_key_index >= len(self.__api_keys):
+            raise RateLimitExceeded(
+                "На жаль, сервіс тимчасово недоступний через перевищення ліміту запитів. "
+                "Будь ласка, спробуйте пізніше. 🙏"
+            )
+        print(f"Switching to API key {self.__current_key_index + 1}")
+        self.client = self.__create_client()
 
     def __generate_response(self, prompt, max_retries=7):
-        """
-        Sends a prompt to the generative model and returns the text response,
-        retrying on failure (e.g., rate limit).
-        """
         for attempt in range(max_retries):
             try:
                 response = self.client.models.generate_content(
@@ -48,10 +74,15 @@ class LLM_Extractor:
                 )
                 return response.text
 
-            except exceptions.GoogleAPIError as e:
-                wait_time = 10
-                print(f"API error: {e}. Retrying in {wait_time} seconds... (attempt {attempt + 1}/{max_retries})")
-                time.sleep(wait_time)
+            except Exception as e:
+                error_str = str(e).lower()
+                if "429" in error_str or "quota" in error_str or "rate" in error_str:
+                    print(f"Rate limit hit on key {self.__current_key_index + 1}, switching...")
+                    self.__switch_key()  # raises RateLimitExceeded if no keys left
+                else:
+                    wait_time = 10
+                    print(f"API error: {e}. Retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
 
         raise Exception("Max retries reached. Failed to get a response.")
 
@@ -61,7 +92,6 @@ class LLM_Extractor:
 
         try:
             return json.loads(response)
-
         except json.JSONDecodeError:
             extracted_dict = re.search(self.__regex_for_extracting_dict, response, re.DOTALL)
             if not extracted_dict:
