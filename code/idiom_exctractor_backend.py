@@ -1,8 +1,9 @@
 import json, re
 from tokenize_uk import tokenize_sents
-from idiom_llm_extractor import LLM_Extractor
+from idiom_llm_extractor import LLM_Extractor, RateLimitExceeded
 from idiom_dict_extractor import DictExtractor
 from stats_builder import StatsBuilder
+
 
 class IdiomExtractorAppService:
     def __init__(self):
@@ -18,12 +19,13 @@ class IdiomExtractorAppService:
         sentences = tokenize_sents(normalized_text)
 
         dict_idioms = DictExtractor().find_idioms(sentences, self.__idiom_dict)
-        dict_model_idioms = LLM_Extractor(sentences).get_idioms()
 
-        # Normalize LLM keys (strip whitespace)
+        try:
+            dict_model_idioms = LLM_Extractor(sentences).get_idioms()
+        except RateLimitExceeded as e:
+            raise RateLimitExceeded(str(e))
+
         dict_model_idioms = {k.strip(): v for k, v in dict_model_idioms.items()}
-
-        # Align both dicts to the same sentence order
         aligned_dict_idioms = {sent: dict_idioms.get(sent.strip(), []) for sent in sentences}
         aligned_llm_idioms = {sent: dict_model_idioms.get(sent.strip(), []) for sent in sentences}
 
@@ -34,4 +36,5 @@ class IdiomExtractorAppService:
             "model_idioms": stats_builder.idioms_extracted_by_llm,
             "shared_idioms": stats_builder.shared_idioms_set,
             "idioms_stats": stats_builder.get_idioms_stats(),
+            "original_text": text,
         }
