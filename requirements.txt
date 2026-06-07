@@ -1,0 +1,14 @@
+streamlit
+pandas
+numpy
+plotly
+tokenize-uk
+google-genai
+google-api-core
+spacy
+https://github.com/explosion/spacy-models/releases/download/uk_core_news_lg-3.8.0/uk_core_news_lg-3.8.0.tar.gz
+python-dotenv
+rich
+pygments==2.19.1
+markdown-it-py==3.0.0
+mdurl==0.1.2
