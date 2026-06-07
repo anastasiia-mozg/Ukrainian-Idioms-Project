@@ -4,6 +4,10 @@
 
 ---
 
+## Демо
+
+Застосунок доступний на Hugging Face Spaces — без встановлення: [Ukrainian Idiom Extractor](https://huggingface.co/spaces/anastasiia-mozg/Ukrainian-Idiom-Extractor)
+
 ## Як це працює
 
 Застосунок розбиває введений текст на речення та запускає два незалежні пайплайни видобування паралельно:
