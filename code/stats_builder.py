@@ -40,11 +40,12 @@ class StatsBuilder:
     def __get_shared_idioms(self) -> pd.DataFrame:
         df = self.idioms_combined_df.copy()
         df['shared_idioms'] = df.apply(
-            lambda row: list(
-                set(self._lemmatize(i) for i in row['idioms_extracted_by_dict'])
-                &
-                set(self._lemmatize(i) for i in row['idioms_extracted_by_llm'])
-            ),
+            lambda row: [
+                orig_dict
+                for orig_dict in row['idioms_extracted_by_dict']
+                for orig_llm in row['idioms_extracted_by_llm']
+                if self._lemmatize(orig_dict) == self._lemmatize(orig_llm)
+            ],
             axis=1
         )
         return df[['sentence', 'shared_idioms']]
