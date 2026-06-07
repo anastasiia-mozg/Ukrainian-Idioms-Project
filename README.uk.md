@@ -6,7 +6,7 @@
 
 ## Демо
 
-Застосунок доступний на Hugging Face Spaces — без встановлення: [Ukrainian Idiom Extractor](https://huggingface.co/spaces/anastasiia-mozg/Ukrainian-Idiom-Extractor)
+Застосунок доступний на Hugging Face Spaces: [Ukrainian Idiom Extractor](https://huggingface.co/spaces/anastasiia-mozg/Ukrainian-Idiom-Extractor)
 
 ## Як це працює
 
